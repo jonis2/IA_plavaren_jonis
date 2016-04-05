@@ -1,0 +1,1 @@
+http://plavarenadmin.6f.sk/
