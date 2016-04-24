@@ -1,13 +1,12 @@
 <?php
 include('data.php');
-administration();
 hlavicka('Kalendár');
 ?>
       <section>
         <div class="container">
           <div class="container">
             <div class="row">
-              <div class="col-sm-12 text-center">
+              <div class="col-xs-12 col-md-12 text-center">
                 <h3>Rozvrh</h3>
               </div>
             </div>
