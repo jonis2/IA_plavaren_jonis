@@ -6,6 +6,7 @@ hlavicka('Správa skpuín');
       <div class="container">
       <?php
         if (isset($_SESSION['login']) && !$_SESSION['admin'] && $_SESSION['login']){
+            group_res();
             get_groups( $_SESSION['id']);
             if (isset($_GET['del'])) {
               delte_group();

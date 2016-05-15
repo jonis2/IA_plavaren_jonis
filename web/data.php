@@ -222,16 +222,16 @@ function delte_group(){
 		$query = 'DELETE FROM groups WHERE id="'.$_GET['del'].'"'; 
 		$result = $con->query($query); 
 		if ($result) {
-          $query = 'DELETE FROM group_aplications WHERE group="'.$_GET['del'].'"'; 
+          $query = 'DELETE FROM group_aplications WHERE groupp="'.$_GET['del'].'"'; 
 		      $result = $con->query($query);
           
-          $query = 'DELETE FROM group_invitations WHERE group="'.$_GET['del'].'"'; 
+          $query = 'DELETE FROM group_invitations WHERE groupp="'.$_GET['del'].'"'; 
 		      $result = $con->query($query);
           
-          $query = 'DELETE FROM group_mebership WHERE group="'.$_GET['del'].'"'; 
+          $query = 'DELETE FROM group_mebership WHERE groupp="'.$_GET['del'].'"'; 
 		      $result = $con->query($query);
           
-          $query = 'SELECT * FROM group_reservation WHERE group="'.$_GET['del'].'"'; 
+          $query = 'SELECT * FROM group_reservation WHERE groupp="'.$_GET['del'].'"'; 
         	$result = $con->query($query); 
         	if ($result->num_rows > 0) {
         			while ($row = $result->fetch_assoc()) {
@@ -239,7 +239,7 @@ function delte_group(){
 		            $res = $con->query($query);
         			}
           }
-          $query = 'DELETE FROM group_reservation WHERE group="'.$_GET['del'].'"'; 
+          $query = 'DELETE FROM group_reservation WHERE groupp="'.$_GET['del'].'"'; 
 		      $result = $con->query($query);
         
 			}
@@ -314,6 +314,249 @@ function add_group(){
      }
     }
 }
+function get_group_reservations($id){
+  if ($con = connect_db()) {
+		$query = 'SELECT * FROM group_reservation WHERE groupp="'.$id.'"'; 
+		$result = $con->query($query);
+    $_SESSION['g_res'] = null; 
+		if ($result->num_rows > 0) {
+           $res = [];
+           $i = 0;
+          	while ($row = $result->fetch_assoc()) {
+                $res[$i]['id'] = $row['id'];
+                $res[$i]['date'] = $row['date'];
+                $res[$i]['start'] = $row['start'];
+                $res[$i]['end'] = $row['end'];
+                $res[$i]['lanes'] = $row['lanes'];
+                $res[$i]['group'] = $row['groupp'];
+                $i += 1;
+        		}
+            $_SESSION['g_res'] = $res;
+			} else {
+      }
+      $con->close();
+  } else { 
+     $con->close();
+  }
+}
+function delete_group_reservation($id){
+  if ($con = connect_db()) {
+		$query = 'DELETE FROM group_reservation WHERE id="'.$id.'"'; 
+		$result = $con->query($query); 
+		if ($result) {
+          $query = 'DELETE FROM user_reservation WHERE reservation="'.$id.'"'; 
+		      $res = $con->query($query);
+        
+			}
+      $con->close();
+  } else { 
+     $con->close();
+      return false;
+  }
+}
+function calendar_data(){
+if ($con = connect_db()) {
+		$query = 'SELECT * FROM calendar';
+		$result = $con->query($query); 
+		if ($result->num_rows > 0) {
+      echo "<script>";
+      echo "var data = [];".' ';
+			while ($row = $result->fetch_assoc()) {
+        echo "data.push([]);";
+        echo "data[data.length-1].push(".$row['id'].");";
+        echo 'data[data.length-1].push("'.$row['date'].'");';
+        echo 'data[data.length-1].push("'.$row['open'].'");';
+        echo 'data[data.length-1].push("'.$row['close'].'");';
+        echo 'data[data.length-1].push('.$row['empty_lanes'].');';
+        echo 'data[data.length-1].push('.$row['lane_capacity'].');';
+			} 
+
+      echo "var reservs =[];";
+
+      $query = 'SELECT * FROM group_reservation';
+  		$result = $con->query($query); 
+  		if ($result->num_rows > 0) {
+  			while ($row = $result->fetch_assoc()) {
+          echo "reservs.push([]);";
+          echo "reservs[reservs.length-1].push(".$row['id'].");";
+          echo 'reservs[reservs.length-1].push("'.$row['date'].'");';
+          echo 'reservs[reservs.length-1].push("'.$row['start'].'");';
+          echo 'reservs[reservs.length-1].push("'.$row['end'].'");';
+          echo 'reservs[reservs.length-1].push('.$row['lanes'].');';
+  			} 
+      }
+      echo "</script>";
+    }
+	  	$con->close();  
+  }  else { 
+     echo "ce"; //connection error
+  }
+}
+function add_group_reservation($group,$date,$start,$end,$lanes){
+      if ($con = connect_db()) {
+    		$query = 'INSERT INTO group_reservation SET groupp="'.$group.'",date="'.$date.'",start="'.$start.'",end="'.$end.'",lanes="'.$lanes.'"';
+    		$result = $con->query($query); 
+    		if ($result) {
+          $con->close();
+          return true;
+    		} else {
+          $con->close();
+          return false;
+        }
+        } else {
+          $con->close();
+          return false;
+        } 
+}
+function group_res(){
+if (isset($_GET['reserve'])){
+  if (isset($_GET['date']) && isset($_GET['open']) && isset($_GET['close']) && isset($_GET['lanes']) &&
+  $_GET['date'] != "" && $_GET['open'] != "0" && $_GET['close'] != "0" && $_GET['lanes'] != "0"){
+      add_group_reservation($_SESSION['group_id'],$_GET['date'],$_GET['open'],$_GET['close'],$_GET['lanes']);
+  
+  }  
+}
+}
 function group_managment(){
   echo "<h2>Skupina ".$_SESSION['groups'][$_GET['id']]['name']."</h2>";
+    if (isset($_GET['del_res'])){
+      delete_group_reservation($_GET['del_res']);
+    }
+    group_res();
+    get_group_reservations( $_SESSION['groups'][$_GET['id']]['id']);
+    echo calendar_data();
+  ?>
+  <h3>Rezervácie</h3>
+  <div class="table-responsive" id="test">
+      <table class="table">
+       <thead>
+        <tr>
+          <th>Dátum</th>
+          <th>Začiatok</th>
+          <th>Koniec</th>
+          <th>Počet dráh</th>
+          <th></th>
+        </tr>
+        </thead>
+        <tbody>
+        <?php
+          if (isset($_SESSION['g_res']) && $_SESSION['g_res'] != null){
+            for ($i = 0;$i <   sizeof($_SESSION['g_res']);$i ++){
+              echo "<tr>";
+              echo  '<td>'.$_SESSION['g_res'][$i]['date'].'</td>';
+              echo  '<td>'.$_SESSION['g_res'][$i]['start'].'</td>';
+              echo  '<td>'.$_SESSION['g_res'][$i]['end'].'</td>';
+              echo  '<td>'.$_SESSION['g_res'][$i]['lanes'].'</td>';
+              echo '<td><a href="gropu_admin.php?id='.$_GET['id'].'&del_res='.$_SESSION['g_res'][$i]['id'].'"><span class="glyphicon glyphicon-remove"></span></a></td>';
+              echo "</tr>";
+            }
+          }    
+        ?>
+        </tbody>
+      </table>
+      </div>
+      <script>
+      function selectt() {
+           lanes = 0;
+           for(i=0;i<data.length;i++){
+              if ($("#date").val() == data[i][1]){
+                $("#lanes").empty();
+                $("#close").empty();
+                start = parseInt($('#open').val()[0]+$('#open').val()[1]);
+                endd = parseInt(data[i][3][0]+data[i][3][1]); 
+                start += 1;
+                lanes =  data[i][4];
+                while (start < endd){
+                 temp = "";
+                 if (start > 9){
+                  temp += start.toString();
+                 } else {
+                  temp += '0';
+                  temp += start.toString();
+                 }
+                 temp += data[i][2].substring(2);
+                 $("#close").append('<option value="'+temp+'">'+temp+'</option>');
+                  start++;
+                }
+              }
+            }
+            for (i = 0; i<reservs.length;i++){
+                if ($("#date").val() == reservs[i][1] && $("#open").val() == reservs[i][2] ){
+                 lanes -=  reservs[i][4];
+                }
+            }
+            for (i = 1;i <= lanes;i++){
+             $("#lanes").append('<option value="'+i.toString()+'">'+i.toString()+'</option>');
+            }
+           
+      }
+      </script>
+     <div class="modal fade" id="add_res-modal" tabindex="-10" role="dialog" aria-labelledby="Pridať skupinu" aria-hidden="true" style="display: none;">
+    	  <div class="modal-dialog">
+				<div class="loginmodal-container">
+					<h1>Zvolte rezervačné údaje</h1><br>
+				  <form id="aform">
+          <div class="container">
+                  <div id="datepicker"></div>
+          </div>
+					<input type="input" class="form-control" name="date" id="date" value="" placeholder="Zvoľte dátum v kalendáry" readonly="readonly">
+          <label  for="open">Začiatok:</label>
+          <select class="form-control" name="open" id="open"  value = "0" onchange="selectt();"">
+          </select>
+          <label for="close">Koniec:</label>
+          <select class="form-control" name="close" id="close" value = "0">
+          </select>
+          <label for="close">Počet dráh:</label>
+          <select class="form-control" name="lanes" id="lanes" value = "0">
+          </select>
+					<input type="submit" name="reserve" class="login loginmodal-submit" value="Rezervovať">
+          <?php $_SESSION['group_id'] = $_SESSION['groups'][$_GET['id']]['id']; ?>
+				  </form>
+				</div>
+			</div>
+	   </div> 
+    <a href="#" data-toggle="modal" data-target="#add_res-modal"> <span class="glyphicon glyphicon-plus"></span></a>
+    <script>
+     $(function() {
+      function available(date) {
+          d =  $.datepicker.formatDate( 'yy-mm-dd', date);
+          for(i=0;i< data.length ;i++){
+            if (d == data[i][1]){
+              return [true, "","Available"];
+            }
+          }
+          return [false,"","unAvailable"];
+      } 
+      $( "#datepicker" ).datepicker({
+        dateFormat: 'yy-mm-dd',
+        minDate: 0,
+        beforeShowDay: available,
+        onSelect: function(dateText, inst) { 
+           $("#date" ).val(dateText);
+           lanes = 0;
+           for(i=0;i<data.length;i++){
+              if (dateText == data[i][1]){
+                $("#open").empty();
+                $("#close").empty();
+                start = parseInt(data[i][2][0]+data[i][2][1]);
+                endd = parseInt(data[i][3][0]+data[i][3][1]); 
+                while (start < endd){
+                 temp = "";
+                 if (start > 9){
+                  temp += start.toString();
+                 } else {
+                  temp += '0';
+                  temp += start.toString();
+                 }
+                 temp += data[i][2].substring(2);
+                 $("#open").append('<option value="'+temp+'">'+temp+'</option>');
+                  start++;
+                }   
+              }
+           }
+        }
+      });
+    });
+    </script>
+    <?php
 }
