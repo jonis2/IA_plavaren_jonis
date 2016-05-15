@@ -1,12 +1,13 @@
 <?php
 include('data.php');
-hlavicka('Správa skpuín');
+hlavicka('Správa skupín');
 ?>
     <section>
       <div class="container">
       <?php
         if (isset($_SESSION['login']) && !$_SESSION['admin'] && $_SESSION['login']){
             group_res();
+            add_request();
             get_groups( $_SESSION['id']);
             if (isset($_GET['del'])) {
               delte_group();
